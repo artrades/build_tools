@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys
 sys.path.append('../../scripts')
@@ -86,14 +87,14 @@ def get_system_info():
         # Получаем текущую директорию
         current_dir = os.getcwd()
     except Exception as e:
-        print(f"Ошибка при получении текущей директории: {e}")
+        print("Ошибка при получении текущей директории: {0}".format(e))
         current_dir = 'unknown'
     
     try:
         # Получаем имя пользователя
         username = os.getenv('USER') or os.getenv('USERNAME') or 'unknown'
     except Exception as e:
-        print(f"Ошибка при получении имени пользователя: {e}")
+        print("Ошибка при получении имени пользователя: {0}".format(e))
         username = 'unknown'
     
     try:
@@ -109,32 +110,32 @@ def get_system_info():
                 with open('/proc/sys/kernel/hostname', 'r') as f:
                     hostname = f.read().strip()
         except Exception as e:
-            print(f"Ошибка при чтении файлов hostname: {e}")
+            print("Ошибка при чтении файлов hostname: {0}".format(e))
             # Оставляем значение из переменных окружения
     except Exception as e:
-        print(f"Ошибка при получении имени хоста: {e}")
+        print("Ошибка при получении имени хоста: {0}".format(e))
         hostname = 'unknown'
     
     return current_dir, username, hostname, domain
 
 def red_text(text):
     """Возвращает текст в красном цвете"""
-    return f"\033[91m{text}\033[0m"
+    return "\033[91m{0}\033[0m".format(text)
 
 def wait_for_continue(step_name):
     """Ожидание нажатия клавиши для продолжения"""
     current_dir, username, hostname, domain = get_system_info()
     
-    print(f"\n{'='*80}")
-    print(f"СИСТЕМНАЯ ИНФОРМАЦИЯ:")
-    print(f"  Текущая директория: {current_dir}")
-    print(f"  Пользователь: {username}")
-    print(f"  Хост: {hostname}")
-    print(f"  Домен: {domain}")
-    print(f"{'='*80}")
-    print(red_text(f"ЭТАП: {step_name}"))
-    print(f"{'='*80}")
-    input("Нажмите любую клавишу для продолжения...")
+    print("\n" + "="*80)
+    print("СИСТЕМНАЯ ИНФОРМАЦИЯ:")
+    print("  Текущая директория: {0}".format(current_dir))
+    print("  Пользователь: {0}".format(username))
+    print("  Хост: {0}".format(hostname))
+    print("  Домен: {0}".format(domain))
+    print("="*80)
+    print(red_text("ЭТАП: {0}".format(step_name)))
+    print("="*80)
+    raw_input("Нажмите любую клавишу для продолжения...")
     print()
 
 # =============================================================================
@@ -172,7 +173,7 @@ wait_for_continue("ОПРЕДЕЛЕНИЕ ВЕТКИ GIT")
 print("Определяем текущую ветку Git проекта...")
 
 branch = get_branch_name("../..")  # Получаем имя текущей ветки
-print(f"Текущая ветка: {branch}")
+print("Текущая ветка: {0}".format(branch))
 
 # =============================================================================
 # ЭТАП 4: ПАРСИНГ АРГУМЕНТОВ КОМАНДНОЙ СТРОКИ
@@ -200,7 +201,7 @@ for arg in array_args:
 # Если ветка указана в параметрах - используем её
 if ("branch" in config):
     branch = config["branch"]
-    print(f"Ветка переопределена через аргументы: {branch}")
+    print("Ветка переопределена через аргументы: {0}".format(branch))
 
 print("---------------------------------------------")
 print("build branch: " + branch)
@@ -229,7 +230,7 @@ build_tools_params = ["--branch", branch,
                       "--update", "1",
                       "--qt-dir", os.getcwd() + "/qt_build/Qt-5.9.9"] + params
 
-print(f"Параметры сборки: {build_tools_params}")
+print("Параметры сборки: {0}".format(build_tools_params))
 
 # =============================================================================
 # ЭТАП 6: КОНФИГУРАЦИЯ СБОРКИ
