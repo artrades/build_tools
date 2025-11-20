@@ -134,7 +134,7 @@ def get_system_info():
                 with open('/proc/sys/kernel/hostname', 'r') as f:
                     hostname = f.read().strip()
         except Exception as e:
-            print(f"Ошибка при чтении файлов hostname: ")
+            #print(f"Ошибка при чтении файлов hostname: ")
             # Оставляем значение из переменных окружения
     except Exception as e:
         print("CANT GET HOST")
