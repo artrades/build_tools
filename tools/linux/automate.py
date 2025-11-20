@@ -111,14 +111,14 @@ def get_system_info():
         # Получаем текущую директорию
         current_dir = os.getcwd()
     except Exception as e:
-        print(f"Ошибка при получении текущей директории: {e}")
+        print(f"Ошибка при получении текущей директории")
         current_dir = 'unknown'
     
     try:
         # Получаем имя пользователя
         username = os.getenv('USER') or os.getenv('USERNAME') or 'unknown'
     except Exception as e:
-        print(f"Ошибка при получении имени пользователя: {e}")
+        print(f"Ошибка при получении имени пользователя: ")
         username = 'unknown'
     
     try:
@@ -134,10 +134,10 @@ def get_system_info():
                 with open('/proc/sys/kernel/hostname', 'r') as f:
                     hostname = f.read().strip()
         except Exception as e:
-            print(f"Ошибка при чтении файлов hostname: {e}")
+            print(f"Ошибка при чтении файлов hostname: ")
             # Оставляем значение из переменных окружения
     except Exception as e:
-        print(f"Ошибка при получении имени хоста: {e}")
+        print(f"Ошибка при получении имени хоста: ")
         hostname = 'unknown'
     
     return current_dir, username, hostname, domain
@@ -197,7 +197,7 @@ wait_for_continue("ОПРЕДЕЛЕНИЕ ВЕТКИ GIT")
 print("Определяем текущую ветку Git проекта...")
 
 branch = get_branch_name("../..")  # Получаем имя текущей ветки
-print(f"Текущая ветка: {branch}")
+print(f"Текущая ветка: ", branch)
 
 # =============================================================================
 # ЭТАП 4: ПАРСИНГ АРГУМЕНТОВ КОМАНДНОЙ СТРОКИ
@@ -225,7 +225,7 @@ for arg in array_args:
 # Если ветка указана в параметрах - используем её
 if ("branch" in config):
     branch = config["branch"]
-    print(f"Ветка переопределена через аргументы: {branch}")
+    print(f"Ветка переопределена через аргументы:", branch)
 
 print("---------------------------------------------")
 print("build branch: " + branch)
