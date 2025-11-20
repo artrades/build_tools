@@ -2,10 +2,35 @@
 
 import sys
 sys.path.append('../../scripts')
+
+# Выводим текущий Python path
+print("=== PYTHON PATH ===")
+for path in sys.path:
+    print(path)
+
+
 import base
 import os
 import subprocess
 import deps
+
+
+# Пробуем импортировать и вывести информацию о модулях
+print("\n=== MODULE INFO ===")
+try:
+    import base
+    print("base module found at:", base.__file__)
+except ImportError as e:
+    print("base import error:", e)
+
+try:
+    import deps
+    print("deps module found at:", deps.__file__)
+except ImportError as e:
+    print("deps import error:", e)
+
+
+
 
 # =============================================================================
 # ФУНКЦИИ ДЛЯ РАБОТЫ С GIT И УСТАНОВКИ QT
