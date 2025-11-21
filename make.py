@@ -25,7 +25,7 @@ print("=" * 60)
 print("1 PAUSE [make.py] base.check_python()")
 print("=" * 60)
 print("Press Enter to continue...")
-input()
+#input()
 
 base.check_python()
 
@@ -72,7 +72,7 @@ print("=" * 60)
 print("2 PAUSE [make.py] config.parse_defaults()")
 print("=" * 60)
 print("Press Enter to continue...")
-input()
+#input()
 # correct defaults (the branding repo is already updated)
 config.parse_defaults()
 
