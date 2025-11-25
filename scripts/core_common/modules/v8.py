@@ -1,5 +1,278 @@
 #!/usr/bin/env python
 
+
+#!/usr/bin/env python
+
+import sys
+sys.path.append('../..')
+import config
+import base
+import os
+import subprocess
+import time
+
+def clean():
+  if base.is_dir("depot_tools"):
+    base.delete_dir_with_access_error("depot_tools");
+    base.delete_dir("depot_tools")
+  if base.is_dir("v8"):
+    base.delete_dir_with_access_error("v8");
+    base.delete_dir("v8")
+  if base.is_exist("./.gclient"):
+    base.delete_file("./.gclient")
+  if base.is_exist("./.gclient_entries"):
+    base.delete_file("./.gclient_entries")
+  if base.is_exist("./.cipd"):
+    base.delete_dir("./.cipd")
+  return
+
+def is_main_platform():
+  if (config.check_option("platform", "linux_64") or config.check_option("platform", "linux_32")):
+    return True
+  if (-1 != config.option("platform").find("android")):
+    return True
+  return False
+
+def is_use_clang():
+  gcc_version = 4
+  gcc_version_str = base.run_command("gcc -dumpfullversion -dumpversion")['stdout']
+  if (gcc_version_str != ""):
+    gcc_version = int(gcc_version_str.split(".")[0])
+    
+  is_clang = "false"
+  if (gcc_version >= 6):
+    is_clang = "true"
+
+  print("gcc major version: " + str(gcc_version) + ", use clang:" + is_clang)
+  return is_clang
+
+def retry_operation(operation_func, operation_name, retry_delay=5):
+    """
+    Retry operation with exponential backoff indefinitely
+    """
+    retries = 0
+    while True:
+        try:
+            result = operation_func()
+            if result:
+                return True
+            else:
+                retries += 1
+                print(operation_name + " failed, retrying... (attempt " + str(retries) + ")")
+                time.sleep(retry_delay)
+        except Exception as e:
+            retries += 1
+            print(operation_name + " raised exception: " + str(e) + ", retrying... (attempt " + str(retries) + ")")
+            time.sleep(retry_delay)
+
+def clone_depot_tools(base_dir):
+    """Clone depot_tools with retry logic"""
+    def clone_operation():
+        if base.is_dir("depot_tools"):
+            return True
+        
+        result = base.cmd("git", ["clone", "https://chromium.googlesource.com/chromium/tools/depot_tools.git"])
+        if result['returncode'] == 0:
+            return True
+        else:
+            print("git clone failed with returncode: " + str(result['returncode']))
+            if result['stdout']:
+                print("stdout: " + result['stdout'])
+            if result['stderr']:
+                print("stderr: " + result['stderr'])
+            return False
+    
+    return retry_operation(clone_operation, "Clone depot_tools")
+
+def fetch_v8():
+    """Fetch v8 with retry logic"""
+    def fetch_operation():
+        if base.is_dir("v8"):
+            return True
+            
+        result = base.cmd("./depot_tools/fetch", ["v8"], True)
+        if result['returncode'] == 0:
+            return True
+        else:
+            print("fetch v8 failed with returncode: " + str(result['returncode']))
+            if result['stdout']:
+                print("stdout: " + result['stdout'])
+            if result['stderr']:
+                print("stderr: " + result['stderr'])
+            return False
+    
+    return retry_operation(fetch_operation, "Fetch v8")
+
+def checkout_v8_branch():
+    """Checkout v8 branch with retry logic"""
+    def checkout_operation():
+        os.chdir("v8")
+        result = base.cmd("git", ["checkout", "-b", "6.0", "branch-heads/6.0"], True)
+        os.chdir("..")
+        if result['returncode'] == 0:
+            return True
+        else:
+            print("git checkout failed with returncode: " + str(result['returncode']))
+            if result['stdout']:
+                print("stdout: " + result['stdout'])
+            if result['stderr']:
+                print("stderr: " + result['stderr'])
+            return False
+    
+    return retry_operation(checkout_operation, "Checkout v8 branch")
+
+def gclient_sync_with_retry():
+    """Run gclient sync with comprehensive retry logic"""
+    def sync_operation():
+        result = base.cmd("gclient", ["sync"], True)
+        if result['returncode'] == 0:
+            return True
+        else:
+            print("gclient sync failed with returncode: " + str(result['returncode']))
+            if result['stdout']:
+                print("stdout: " + result['stdout'])
+            if result['stderr']:
+                print("stderr: " + result['stderr'])
+            
+            print("Trying gclient sync with --force...")
+            result_force = base.cmd("gclient", ["sync", "--force"], True)
+            if result_force['returncode'] == 0:
+                return True
+            else:
+                print("gclient sync --force also failed with returncode: " + str(result_force['returncode']))
+                if result_force['stdout']:
+                    print("stdout: " + result_force['stdout'])
+                if result_force['stderr']:
+                    print("stderr: " + result_force['stderr'])
+                return False
+    
+    return retry_operation(sync_operation, "gclient sync", retry_delay=10)
+
+def linux_sync_with_retry():
+    """Run gclient sync --no-history with retry logic for Linux"""
+    def sync_operation():
+        result = base.cmd("gclient", ["sync", "--no-history"])
+        if result['returncode'] == 0:
+            return True
+        else:
+            print("gclient sync --no-history failed with returncode: " + str(result['returncode']))
+            if result['stdout']:
+                print("stdout: " + result['stdout'])
+            if result['stderr']:
+                print("stderr: " + result['stderr'])
+            return False
+    
+    return retry_operation(sync_operation, "gclient sync --no-history", retry_delay=10)
+
+def make():
+  if not is_main_platform():
+    return
+
+  base_dir = base.get_script_dir() + "/../../core/Common/3dParty/v8"
+  if (-1 != config.option("platform").find("android")):
+    base.cmd_in_dir(base_dir + "/android", "python", ["./make.py"])
+    if (-1 == config.option("platform").find("linux")):
+      return
+
+  print("[fetch & build]: v8")
+  old_env = dict(os.environ)
+
+  old_cur = os.getcwd()
+  os.chdir(base_dir)
+
+  base.common_check_version("v8", "1", clean)
+
+  if not base.is_dir("v8/out.gn"):
+    clean()
+
+  # --------------------------------------------------------------------------
+  # Clone depot_tools with retry
+  if not clone_depot_tools(base_dir):
+    os.chdir(old_cur)
+    os.environ.clear()
+    os.environ.update(old_env)
+    return
+
+  os.environ["PATH"] = base_dir + "/depot_tools" + os.pathsep + os.environ["PATH"]
+
+  if not base.is_dir("v8/out.gn"):
+    base.cmd("gclient")
+
+  # --------------------------------------------------------------------------
+  # fetch v8 with retry
+  if not base.is_dir("v8"):
+    if not fetch_v8():
+      os.chdir(old_cur)
+      os.environ.clear()
+      os.environ.update(old_env)
+      return
+
+    if not checkout_v8_branch():
+      os.chdir(old_cur)
+      os.environ.clear()
+      os.environ.update(old_env)
+      return
+
+  # --------------------------------------------------------------------------
+  # correct with retry
+  if not base.is_dir("v8/out.gn"):
+    
+    if not gclient_sync_with_retry():
+      os.chdir(old_cur)
+      os.environ.clear()
+      os.environ.update(old_env)
+      return
+
+    if ("linux" == base.host_platform()):
+      if base.is_dir("v8/third_party/binutils/Linux_x64/Release"):
+        base.delete_dir("v8/third_party/binutils/Linux_x64/Release")
+      if base.is_dir("v8/third_party/binutils/Linux_ia32/Release"):
+        base.delete_dir("v8/third_party/binutils/Linux_ia32/Release")
+
+      if not linux_sync_with_retry():
+          os.chdir(old_cur)
+          os.environ.clear()
+          os.environ.update(old_env)
+          return
+
+      if base.is_dir("v8/third_party/binutils/Linux_x64/Release/bin"):
+        for file in os.listdir("v8/third_party/binutils/Linux_x64/Release/bin"):
+          name = file.split("/")[-1]
+          if ("ld.gold" != name):
+            base.cmd("mv", ["v8/third_party/binutils/Linux_x64/Release/bin/" + name, "v8/third_party/binutils/Linux_x64/Release/bin/old_" + name])
+            base.cmd("ln", ["-s", "/usr/bin/" + name, "v8/third_party/binutils/Linux_x64/Release/bin/" + name])
+
+      if base.is_dir("v8/third_party/binutils/Linux_ia32/Release/bin"):
+        for file in os.listdir("v8/third_party/binutils/Linux_ia32/Release/bin"):
+          name = file.split("/")[-1]
+          if ("ld.gold" != name):
+            base.cmd("mv", ["v8/third_party/binutils/Linux_ia32/Release/bin/" + name, "v8/third_party/binutils/Linux_ia32/Release/bin/old_" + name])
+            base.cmd("ln", ["-s", "/usr/bin/" + name, "v8/third_party/binutils/Linux_ia32/Release/bin/" + name])
+
+  # --------------------------------------------------------------------------
+  # build
+  os.chdir("v8")
+
+  base_args64 = "target_cpu=\\\"x64\\\" v8_target_cpu=\\\"x64\\\" v8_static_library=true is_component_build=false v8_use_snapshot=false"
+  base_args32 = "target_cpu=\\\"x86\\\" v8_target_cpu=\\\"x86\\\" v8_static_library=true is_component_build=false v8_use_snapshot=false"
+
+  if config.check_option("platform", "linux_64"):
+    base.cmd2("gn", ["gen", "out.gn/linux_64", "--args=\"is_debug=false " + base_args64 + " is_clang=" + is_use_clang() + " use_sysroot=false treat_warnings_as_errors=false\""])
+    base.cmd("ninja", ["-C", "out.gn/linux_64"])
+
+  if config.check_option("platform", "linux_32"):
+    base.cmd2("gn", ["gen", "out.gn/linux_32", "--args=\"is_debug=false " + base_args32 + " is_clang=" + is_use_clang() + " use_sysroot=false treat_warnings_as_errors=false\""])
+    base.cmd("ninja", ["-C", "out.gn/linux_32"])
+
+  os.chdir(old_cur)
+  os.environ.clear()
+  os.environ.update(old_env)
+  return
+
+
+
+
+"""
 import sys
 sys.path.append('../..')
 import config
@@ -55,9 +328,9 @@ def is_use_clang():
   return is_clang
 
 def retry_operation(operation_func, operation_name, max_retries=10, retry_delay=5):
-    """
-    Retry operation with exponential backoff
-    """
+    
+    # Retry operation with exponential backoff
+    
     retries = 0
     while retries < max_retries:
         try:
@@ -384,6 +657,9 @@ def make_xp():
   os.environ.clear()
   os.environ.update(old_env)
   return
+"""
+
+
 
 
 """
