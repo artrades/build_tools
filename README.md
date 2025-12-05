@@ -1,70 +1,61 @@
 # build_tools
 
-## Overview
+## Обзор
 
-**build_tools** allow you to automatically get and install all the components
-necessary for the compilation process, all the dependencies required for the
-**ONLYOFFICE Document Server**, **Document Builder** and **Desktop Editors**
- correct work, as well as to get the latest version of
-**ONLYOFFICE products** source code and build all their components.
+**build_tools** позволяют автоматически получить и установить все компоненты, необходимые для процесса компиляции, все зависимости, требуемые для корректной работы **ONLYOFFICE Document Server**, **Document Builder** и **Desktop Editors**, а также получить последнюю версию исходного кода **продуктов ONLYOFFICE** и собрать все их компоненты.
 
-**Important!**  We can only guarantee the correct work of the products built from
-the `master` branch.
+**Важно!** Мы можем гарантировать корректную работу только продуктов, собранных из ветки `master`.
 
-## How to use - Linux
+## Как использовать - Linux
 
-**Note**: The solution has been tested on **Ubuntu 14.04**.
+**Примечание**: Решение было протестировано на **Ubuntu 14.04**.
 
-### Installing dependencies
+### Установка зависимостей
 
-You might need to install **Python**, depending on your version of Ubuntu:
+Вам может потребоваться установить **Python** в зависимости от вашей версии Ubuntu:
 
 ```bash
 sudo apt-get install -y python
 ```
 
-### Building ONLYOFFICE products source code
+### Сборка исходного кода продуктов ONLYOFFICE
 
-1. Clone the build_tools repository:
+1. Клонируйте репозиторий build_tools:
 
     ```bash
     git clone https://github.com/ONLYOFFICE/build_tools.git
     ```
 
-2. Go to the `build_tools/tools/linux` directory:
+2. Перейдите в директорию `build_tools/tools/linux`:
 
     ```bash
     cd build_tools/tools/linux
     ```
 
-3. Run the `automate.py` script:
+3. Запустите скрипт `automate.py`:
 
     ```bash
     ./automate.py
     ```
 
-If you run the script without any parameters this allows to build **ONLYOFFICE
-Document Server**, **Document Builder** and **Desktop Editors**.
+Если запустить скрипт без параметров, это позволит собрать **ONLYOFFICE Document Server**, **Document Builder** и **Desktop Editors**.
 
-The result will be available in the `./out` directory.
+Результат будет доступен в директории `./out`.
 
-To build **ONLYOFFICE** products separately run the script with the parameter
-corresponding to the necessary product.
+Чтобы собрать продукты **ONLYOFFICE** отдельно, запустите скрипт с параметром, соответствующим необходимому продукту.
 
-It’s also possible to build several products at once as shown in the example
-below.
+Также возможно собрать несколько продуктов одновременно, как показано в примере ниже.
 
-**Example**: Building **Desktop Editors** and **Document Server**
+**Пример**: Сборка **Desktop Editors** и **Document Server**
 
 ```bash
 ./automate.py desktop server
 ```
 
-### Using Docker
+### Использование Docker
 
-You can also build all **ONLYOFFICE products** at once using Docker.
-Build the `onlyoffice-document-editors-builder` Docker image using the
-provided `Dockerfile` and run the corresponding Docker container.
+Вы также можете собрать все **продукты ONLYOFFICE** одновременно с помощью Docker.
+Соберите Docker-образ `onlyoffice-document-editors-builder` с использованием предоставленного `Dockerfile` и запустите соответствующий Docker-контейнер.
 
 ```bash
 mkdir out
@@ -72,19 +63,19 @@ docker build --tag onlyoffice-document-editors-builder .
 docker run -v $PWD/out:/build_tools/out onlyoffice-document-editors-builder
 ```
 
-The result will be available in the `./out` directory.
+Результат будет доступен в директории `./out`.
 
-### Building and running ONLYOFFICE products separately
+### Сборка и запуск продуктов ONLYOFFICE отдельно
 
 #### Document Builder
 
-##### Building Document Builder
+##### Сборка Document Builder
 
 ```bash
 ./automate.py builder
 ```
 
-##### Running Document Builder
+##### Запуск Document Builder
 
 ```bash
 cd ../../out/linux_64/onlyoffice/documentbuilder
@@ -93,13 +84,13 @@ cd ../../out/linux_64/onlyoffice/documentbuilder
 
 #### Desktop Editors
 
-##### Building Desktop Editors
+##### Сборка Desktop Editors
 
 ```bash
 ./automate.py desktop
 ```
 
-##### Running Desktop Editors
+##### Запуск Desktop Editors
 
 ```bash
 cd ../../out/linux_64/onlyoffice/desktopeditors
@@ -108,33 +99,32 @@ LD_LIBRARY_PATH=./ ./DesktopEditors
 
 #### Document Server
 
-##### Building Document Server
+##### Сборка Document Server
 
 ```bash
 ./automate.py server
 ```
 
-##### Installing and configuring Document Server dependencies
+##### Установка и настройка зависимостей Document Server
 
-**Document Server** uses **NGINX** as a web server and **PostgreSQL** as a database.
-**RabbitMQ** is also required for **Document Server** to work correctly.
+**Document Server** использует **NGINX** в качестве веб-сервера и **PostgreSQL** в качестве базы данных.
+**RabbitMQ** также требуется для корректной работы **Document Server**.
 
-###### Installing and configuring NGINX
+###### Установка и настройка NGINX
 
-1. Install NGINX:
+1. Установите NGINX:
 
     ```bash
     sudo apt-get install nginx
     ```
 
-2. Disable the default website:
+2. Отключите сайт по умолчанию:
 
     ```bash
     sudo rm -f /etc/nginx/sites-enabled/default
     ```
 
-3. Set up the new website. To do that create the `/etc/nginx/sites-available/onlyoffice-documentserver`
-   file with the following contents:
+3. Настройте новый сайт. Для этого создайте файл `/etc/nginx/sites-available/onlyoffice-documentserver` со следующим содержимым:
 
     ```bash
     map $http_host $this_host {
@@ -170,30 +160,29 @@ LD_LIBRARY_PATH=./ ./DesktopEditors
     }
     ```
 
-4. Add the symlink to the newly created website to the
-   `/etc/nginx/sites-available` directory:
+4. Добавьте символьную ссылку на вновь созданный сайт в директорию `/etc/nginx/sites-available`:
 
     ```bash
     sudo ln -s /etc/nginx/sites-available/onlyoffice-documentserver /etc/nginx/sites-enabled/onlyoffice-documentserver
     ```
 
-5. Restart NGINX to apply the changes:
+5. Перезапустите NGINX для применения изменений:
 
     ```bash
     sudo nginx -s reload
     ```
 
-###### Installing and configuring PostgreSQL
+###### Установка и настройка PostgreSQL
 
-1. Install PostgreSQL:
+1. Установите PostgreSQL:
 
     ```bash
     sudo apt-get install postgresql
     ```
 
-2. Create the PostgreSQL database and user:
+2. Создайте базу данных PostgreSQL и пользователя:
 
-    **Note**: The created database must have **onlyoffice** both for user and password.
+    **Примечание**: Созданная база данных должна иметь **onlyoffice** как для пользователя, так и для пароля.
 
     ```bash
     sudo -i -u postgres psql -c "CREATE DATABASE onlyoffice;"
@@ -201,22 +190,21 @@ LD_LIBRARY_PATH=./ ./DesktopEditors
     sudo -i -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
     ```
 
-3. Configure the database:
+3. Настройте базу данных:
 
     ```bash
     psql -hlocalhost -Uonlyoffice -d onlyoffice -f ../../out/linux_64/onlyoffice/documentserver/server/schema/postgresql/createdb.sql
     ```
 
-**Note**: Upon that, you will be asked to provide a password for the **onlyoffice**
-PostgreSQL user. Please enter the **onlyoffice** password.
+**Примечание**: После этого вам будет предложено ввести пароль для пользователя PostgreSQL **onlyoffice**. Пожалуйста, введите пароль **onlyoffice**.
 
-###### Installing RabbitMQ
+###### Установка RabbitMQ
 
 ```bash
 sudo apt-get install rabbitmq-server
 ```
 
-###### Generate fonts data
+###### Генерация данных о шрифтах
 
 ```bash
 cd out/linux_64/onlyoffice/documentserver/
@@ -231,7 +219,7 @@ LD_LIBRARY_PATH=${PWD}/server/FileConverter/bin server/tools/allfontsgen \
   --use-system="true"
 ```
 
-###### Generate presentation themes
+###### Генерация тем презентаций
 
 ```bash
 cd out/linux_64/onlyoffice/documentserver/
@@ -241,13 +229,11 @@ LD_LIBRARY_PATH=${PWD}/server/FileConverter/bin server/tools/allthemesgen \
   --output="${PWD}/sdkjs/common/Images"
 ```
 
-##### Running Document Server
+##### Запуск Document Server
 
-**Note**: All **Document Server** components run as foreground processes. Thus
-you need separate terminal consoles to run them or specific tools which will
-allow to run foreground processes in background mode.
+**Примечание**: Все компоненты **Document Server** запускаются как процессы переднего плана. Таким образом, вам нужны отдельные терминальные консоли для их запуска или специальные инструменты, которые позволят запускать процессы переднего плана в фоновом режиме.
 
-1. Start the **FileConverter** service:
+1. Запустите службу **FileConverter**:
 
     ```bash
     cd out/linux_64/onlyoffice/documentserver/server/FileConverter
@@ -257,7 +243,7 @@ allow to run foreground processes in background mode.
     ./converter
     ```
 
-2. Start the **DocService** service:
+2. Запустите службу **DocService**:
 
     ```bash
     cd out/linux_64/onlyoffice/documentserver/server/DocService
